@@ -6,7 +6,7 @@ import google.generativeai as genai
 st.set_page_config(page_title="شات بوت الشهر العقاري الذكي - الفيوم", page_icon="🤖", layout="centered")
 
 # دمج الـ API Key الخاص بكِ مباشرة لتفعيل الذكاء الاصطناعي (Gemini)
-API_KEY = "AQ.Ab8RN6JP1ZKm8sr7VaUCIjRnRvyevtfOormyQ7UlxesxQR8tMA"
+API_KEY = "AQ.Ab8RN6JZK8npfsOCkkWcwfKMhR8LOQeQtxyp4d-NP8ndTOW3zA"
 genai.configure(api_key=API_KEY)
 
 # دالة مرنة وقوية لقراءة الداتا سيت الخاصة بكِ
