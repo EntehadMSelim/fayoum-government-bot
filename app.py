@@ -1,174 +1,124 @@
 import streamlit as st
 import pandas as pd
+import google.generativeai as genai
 
 # إعدادات الصفحة الأساسية
-st.set_page_config(page_title="شات بوت الشهر العقاري - محافظة الفيوم", page_icon="⚖️", layout="centered")
+st.set_page_config(page_title="شات بوت الشهر العقاري الذكي - الفيوم", page_icon="🤖", layout="centered")
 
-# دالة ذكية ومرنة لقراءة الداتا سيت الخاصة بكِ بدون أخطاء
+# دمج الـ API Key الخاص بكِ مباشرة لتفعيل الذكاء الاصطناعي (Gemini)
+API_KEY = "AQ.Ab8RN6JP1ZKm8sr7VaUCIjRnRvyevtfOormyQ7UlxesxQR8tMA"
+genai.configure(api_key=API_KEY)
+
+# دالة مرنة وقوية لقراءة الداتا سيت الخاصة بكِ
 @st.cache_data
 def load_fayoum_data():
     try:
-        # قراءة الملف مع ترك بايثون يكتشف الفاصل تلقائياً لمنع الأخطاء
         df = pd.read_csv("fayoum_clean_dataset.csv", sep=None, engine='python', encoding="utf-8")
-        
-        # قاموس لترجمة أسماء المكاتب من الإنجليزية للعربية لتظهر بشكل احترافي للمدير
         office_translation = {
             "Youssef El-Seddik Office": "مكتب يوسف الصديق",
             "Fayoum University Office": "مكتب توثيق جامعة الفيوم",
             "Fayoum Model Office": "مكتب الفيوم النموذجي",
             "Itsaa Office": "مكتب إطسا",
-            "Al-Breid El-Gon Office": "مكتب البريد العام / المقار الأخرى",
+            "Al-Breid El-Gon Office": "مكتب البريد العام",
             "Senores Office": "مكتب سنورس",
             "Tamiya Office": "مكتب طامية",
             "El Fayoum Al-Dawahy Office": "مكتب الضواحي",
-            "Abshaway Office": "مكتب إبشواي",
-            "Unknown": "مكتب غير محدد / سيارات متنقلة"
+            "Abshaway Office": "مكتب إبشواي"
         }
         if 'Office' in df.columns:
             df['Office_Arabic'] = df['Office'].map(office_translation).fillna(df['Office'])
         else:
-            df['Office_Arabic'] = df.iloc[:, 0] # أول عمود إذا كانت الأسماء بالعربي
-            
+            df['Office_Arabic'] = df.iloc[:, 0]
         return df
     except Exception as e:
-        st.error(f"⚠️ واجهنا مشكلة في قراءة الملف: {e}")
+        st.error(f"⚠️ مشكلة في قراءة ملف البيانات: {e}")
         return None
 
 df_transactions = load_fayoum_data()
 
 # عنوان التطبيق الرئيسي
-st.title("⚖️ شات بوت الشهر العقاري الذكي (محافظة الفيوم)")
-st.write("النظام المطور المرتبط بقاعدة بيانات مكاتب الفيوم الحية.")
+st.title("⚖️ مساعد الشهر العقاري الذكي المدعوم بـ Gemini")
+st.write("شات بوت تفاعلي حقيقي يعتمد على فهم النصوص وتحليل البيانات لايف بمحافظة الفيوم.")
 
-# القائمة الجانبية للفصل بين الأدوار وضبط خانة الباسوورد
-st.sidebar.header("بوابة الدخول")
-user_role = st.sidebar.radio("اختر صفة المستخدم:", ("مواطن (خدمات واستعلامات الفيوم)", "صاحب القرار (إدارة الفيوم)"))
+# القائمة الجانبية للفصل بين الأدوار
+st.sidebar.header("⚙️ بوابة الدخول")
+user_role = st.sidebar.radio("اختر صفة المستخدم:", ("مواطن (استعلامات الفيوم)", "صاحب القرار (إدارة الفيوم)"))
 
-# إظهار خانة الباسوورد في القائمة الجانبية فوراً وثباتها عند اختيار "صاحب القرار"
+# باسوورد المدير الثابت في القائمة الجانبية لمنع الاختفاء
 password = ""
 if user_role == "صاحب القرار (إدارة الفيوم)":
     st.sidebar.markdown("---")
-    password = st.sidebar.text_input("🔑 كلمة سر المدير للدخول:", type="password")
+    password = st.sidebar.text_input("🔒 كلمة سر المدير:", type="password")
 
-# ----------------- 1. شات بوت المواطن -----------------
-if user_role == "مواطن (خدمات واستعلامات الفيوم)":
-    st.subheader("🤖 شات بوت خدمة مواطني الفيوم")
-    st.info("اسألني عن مواعيد وأيام عمل كل الفروع وأماكن السيارات المتنقلة بمحافظة الفيوم.")
+# ----------------- 1. شات بوت المواطن الذكي (محادثة حرة) -----------------
+if user_role == "مواطن (استعلامات الفيوم)":
+    st.subheader("🤖 اسأل ذكاء اصطناعي حقيقي عن خدمات الفيوم")
+    st.info("اكتبي أي سؤال بالعامية المصرية حول مواعيد الفروع، السيارات المتنقلة، أو الأوراق المطلوبة وسيجيبك الذكاء الاصطناعي فوراً.")
     
-    citizen_questions = {
-        "اختر سؤالك من هنا...": "",
-        "ما هي المكاتب التي تعمل فترتين (صباحية ومسائية) in الفيوم؟" or "ما هي المكاتب التي تعمل فترتين (صباحية ومسائية) في الفيوم؟": "المكاتب التي تعمل فترتين لخدمتكم هي: (مكتب الضواحي، المكتب النموذجي، مكتب إطسا، مكتب سنورس، مكتب إبشواي، ومكتب طامية).",
-        "ما هي مواعيد وأيام عمل مكتب توثيق نادي القضاة بالفيوم؟": "مكتب توثيق نادي القضاة يعمل طوال أيام الأسبوع، ما عدا يومي الإثنين والثلاثاء.",
-        "ما هي مواعيد وأيام عمل مكتب توثيق جامعة الفيوم؟": "مكتب توثيق جامعة الفيوم مخصص للعمل يومي الإثنين والثلاثاء فقط من كل أسبوع.",
-        "ما هي مكاتب الفترة المسائية فقط في الفيوم؟": "المكاتب المخصصة للفترة المسائية فقط هي: (مكتب توثيق فرع أورانج، ومكتب توثيق نادي المحافظة).",
-        "ما هي أرقام وأسماء سيارات التوثيق المتنقلة بالفيوم؟": "تتوفر بالمحافظة سيارتان: (السيارة المتنقلة رقم 25) و (سيارة خدمات مصر رقم 21).",
-        "كيف يمكنني حجز موعد في أي مكتب بالفيوم؟": "يمكنك الحجز مسبقاً عبر تطبيق 'أرقم الرقمي' أو بوابة مصر الرقمية لتفادي الزحام قبل التوجه للمكتب.",
-        "كم تبلغ رسوم توثيق عقد بيع سيارة؟": "تحسب الرسوم بناءً على موديل السيارة، سنة الصنع، وعدد السلندرات وفقاً لجدول الرسوم المحدث بالمحافظة.",
-        "الأوراق المطلوبة لتوثيق عقد بيع شقة أو أرض بالفيوم؟": "سند ملكية البائع (عقد مسجل)، بطاقات الرقم القومي للطرفين سارية، وعقد البيع الابتدائي المراد توثيقه."
-    }
+    # سياق معرفي لتوجيه ذكاء Gemini للرد بدقة كابن البلد في الفيوم
+    fayoum_context = """
+    أنت مساعد ذكي مخصص لخدمة مواطني محافظة الفيوم في الشهر العقاري. معلوماتك الأساسية هي:
+    - المكاتب التي تعمل فترتين (صباحي ومسائي): الضواحي، النموذجي، إطسا، سنورس، إبشواي، طامية.
+    - مكتب نادي القضاة يعمل طوال الأسبوع عدا الإثنين والثلاثاء.
+    - مكتب جامعة الفيوم يعمل الإثنين والثلاثاء فقط.
+    - مكاتب فترة مسائية فقط: فرع أورانج، ونادي المحافظة.
+    - السيارات المتنقلة بالفيوم: سيارة 25، وسيارة خدمات مصر 21.
+    - ينصح دائماً بالحجز عبر تطبيق أرقم الرقمي أو بوابة مصر الرقمية.
+    أجب على أسئلة المواطن بلغة عامية مصرية مهذبة ومختصرة بناءً على هذه المعلومات.
+    """
     
-    selected_q = st.selectbox("اختر سؤالك المعتاد:", list(citizen_questions.keys()))
-    if selected_q != "اختر سؤالك من هنا...":
-        st.success(f"**الرد:** {citizen_questions[selected_q]}")
+    citizen_query = st.text_input("اكتبي سؤالكِ هنا بكل حرية (مثال: عايزة أعمل توثيق شقة، أو إيه مواعيد مكتب جامعة الفيوم؟)...")
+    
+    if citizen_query:
+        with st.spinner("🤖 جاري التفكير والرد..."):
+            try:
+                model = genai.GenerativeModel("gemini-1.5-flash")
+                full_prompt = f"{fayoum_context}\n\nسؤال المواطن: {citizen_query}\nالرد:"
+                response = model.generate_content(full_prompt)
+                st.success(response.text)
+            except Exception as e:
+                st.error(f"حدث خطأ أثناء الاتصال بالذكاء الاصطناعي: {e}")
 
-# ----------------- 2. شات بوت المدير -----------------
+# ----------------- 2. شات بوت المدير المتحدث مع البيانات (تحليل ومقترحات حرة) -----------------
 elif user_role == "صاحب القرار (إدارة الفيوم)":
-    st.subheader("📊 لوحة تحكم ومتابعة مكاتب الفيوم (تحليل البيانات الحية)")
+    st.subheader("📊 لوحة تحليل البيانات الذكية للمديرين")
     
     if password == "admin123":
         st.success("🔓 تم تسجيل الدخول بنجاح - إدارة شهر عقاري الفيوم.")
         
         if df_transactions is not None:
-            # تقسيم الشاشة لجزأين: جزء التقارير الرقمية وجزء المقترحات الذكية
-            tab1, tab2 = st.tabs(["📊 التقارير والإحصائيات", "🤖 مقترحات وتوصيات الذكاء الاصطناعي"])
+            st.write("### 💬 ناقشي واطلبي مقترحات وتوصيات من الذكاء الاصطناعي بناءً على ملفكِ:")
+            st.caption("أمثلة لأسئلة حرة: (اقترح لي خطة لتخفيف التكدس بناءً على الحالات المعلقة؟ / ما هي الخدمة الأكثر تعطيلاً للعمل؟ / لخص لي كفاءة المكاتب الحالية)")
             
-            with tab1:
-                st.write("### استخراج التقارير الدورية:")
-                admin_options = [
-                    "اختر التقرير المطلوب...",
-                    "كم إجمالي عدد المعاملات المسجلة في النظام حتى الآن؟",
-                    "ما هي أكثر 3 مكاتب إقبالاً وتسجيلاً للمعاملات؟",
-                    "ما هي الخدمة الأكثر طلباً من المواطنين في الفيوم? " or "ما هي الخدمة الأكثر طلباً من المواطنين في الفيوم؟",
-                    "ما هي نسبة المعاملات المكتملة مقارنة بالمعلقة؟",
-                    "ما هو متوسط وقت معالجة المعاملة الواحدة بالدقائق؟",
-                    "عرض عينة من أحدث التقييمات والشكاوى الواردة"
-                ]
-                
-                selected_admin_q = st.selectbox("ما التقرير الإداري المطلوب؟", admin_options)
-                cols = df_transactions.columns
-                
-                if selected_admin_q == "كم إجمالي عدد المعاملات المسجلة في النظام حتى الآن؟":
-                    st.info(f"📊 **تقرير الإدارة:** إجمالي المعاملات المسجلة بملف المحافظة الحالي هو **{len(df_transactions):,} معاملة**.")
-                    
-                elif selected_admin_q == "ما هي أكثر 3 مكاتب إقبالاً وتسجيلاً للمعاملات؟":
-                    top_offices = df_transactions['Office_Arabic'].value_counts().head(3)
-                    st.info("📍 **تقرير الإدارة: أكثر 3 مكاتب ضغطاً وإقبالاً بناءً على البيانات:**")
-                    for office, count in top_offices.items():
-                        st.write(f"- **{office}**: {count} معاملة")
-                        
-                elif "الخدمة الأكثر طلباً" in selected_admin_q:
-                    serv_col = 'Service_Type' if 'Service_Type' in cols else cols[1]
-                    top_service = df_transactions[serv_col].value_counts().idxmax()
-                    top_service_count = df_transactions[serv_col].value_counts().max()
-                    st.info(f"🔍 **تقرير الإدارة:** الخدمة الأكثر طلباً هي (**{top_service}**) بإجمالي **{top_service_count} طلب**.")
-                    
-                elif selected_admin_q == "ما هي نسبة المعاملات المكتملة مقارنة بالمعلقة؟":
-                    stat_col = 'Status' if 'Status' in cols else cols[2]
-                    status_counts = df_transactions[stat_col].value_counts()
-                    st.info("🔄 **تقرير حالة المنظومة:**")
-                    for status, count in status_counts.items():
-                        percentage = (count / len(df_transactions)) * 100
-                        st.write(f"- حالة (**{status}**): {count} معاملة بنسبة ({percentage:.1f}%)")
-                        
-                elif selected_admin_q == "ما هو متوسط وقت معالجة المعاملة الواحدة بالدقائق؟":
-                    time_col = 'Processing_Time' if 'Processing_Time' in cols else (cols[3] if len(cols)>3 else None)
-                    if time_col and pd.api.types.is_numeric_dtype(df_transactions[time_col]):
-                        avg_time = df_transactions[time_col].mean()
-                        st.info(f"⏱️ **تقرير الأداء الكلي:** متوسط وقت إنجاز المعاملة الواحدة هو **{avg_time:.1f} دقيقة**.")
-                    else:
-                        st.warning("⚠️ عمود وقت المعالجة غير موجود أو يحتوي على نصوص بدلاً من الأرقام.")
-                    
-                elif selected_admin_q == "عرض عينة من أحدث التقييمات والشكاوى الواردة":
-                    feed_col = 'Feedback' if 'Feedback' in cols else cols[-1]
-                    feedbacks = df_transactions[df_transactions[feed_col].astype(str).str.lower() != 'no feedback'][feed_col].tail(5).tolist()
-                    st.warning("⚠️ **آخر 5 آراء وشكاوى تم رصدها من المواطنين:**")
-                    if feedbacks:
-                        for fb in feedbacks:
-                            st.write(f"💬 {fb}")
-                    else:
-                        st.write("لا توجد شكاوى أو تقييمات سلبية حالياً.")
+            # تجهيز ملخص الأرقام الحية من الداتا سيت ليمسكها الذكاء الاصطناعي ويحللها
+            total_rows = len(df_transactions)
+            office_counts = df_transactions['Office_Arabic'].value_counts().to_string()
+            status_counts = df_transactions['Status'].value_counts().to_string()
             
-            with tab2:
-                st.write("### 🤖 مقترحات وتوصيات ذكية بناءً على ملف البيانات:")
-                
-                # حساب ذكي لأكثر مكتب يعاني من معاملات معلقة (Pending)
-                try:
-                    pending_df = df_transactions[df_transactions['Status'].str.strip() == 'Pending']
-                    top_pending_office = pending_df['Office_Arabic'].value_counts().idxmax()
-                    top_pending_count = pending_df['Office_Arabic'].value_counts().max()
-                    
-                    st.markdown(f"🚨 **توصية التكدس:** تم رصد عدد كبير من المعاملات المعلقة (Pending) في **{top_pending_office}** بعدد **{top_pending_count} معاملة**. *المقترح:* يُنصح بتوجيه إحدى السيارات المتنقلة لدعم هذا المكتب لتخفيف العبء الكلي.")
-                except:
-                    st.write("✅ المنظومة تسير بشكل ممتاز ولا توجد مكاتب تعاني من تكدس الحالات المعلقة.")
-                
-                # حساب ذكي لأبطأ خدمة في المعالجة
-                try:
-                    avg_time_per_service = df_transactions.groupby('Service_Type')['Processing_Time'].mean()
-                    slowest_service = avg_time_per_service.idxmax()
-                    slowest_time = avg_time_per_service.max()
-                    
-                    st.markdown(f"⏱️ **توصية تطوير الإجراءات:** خدمة (**{slowest_service}**) تأخذ أطول وقت معالجة بمعدل **{slowest_time:.1f} دقيقة** لكل معاملة. *المقترح:* يرجى مراجعة الدورة المستندية لهذه الخدمة أو تدريب الموظفين عليها لرفع الكفاءة.")
-                except:
-                    pass
-                
-                # نصيحة عامة بناءً على جودة الـ Feedback
-                st.markdown("💡 **توصية رضاء المواطنين:** بناءً على تحليل التقييمات، أغلب الشكاوى تتركز حول 'بطء الإجراءات'. يُقترح تفعيل نظام الحجز المسبق الإلزامي عبر منصة مصر الرقمية لتقليل زمن الانتظار.")
-                
+            data_context = f"""
+            أنت مستشار إداري وخبير تحليل بيانات لشهر عقاري الفيوم. أمامك ملخص الأرقام الحقيقية والحية من ملف البيانات الحالي:
+            - إجمالي المعاملات المسجلة بالمحافظة: {total_rows} معاملة.
+            - حجم المعاملات والإقبال التراكمي في كل مكتب:
+            {office_counts}
+            - حالات المعاملات الحالية في المنظومة (مكتملة أو معلقة):
+            {status_counts}
+            
+            بناءً على هذه الأرقام والبيانات الحقيقية، قم بالإجابة على استفسارات المدير، واقترح عليه حلولاً تنظيمية وتوصيات ذكية لتطوير فروع الفيوم بشكل ممتاز.
+            """
+            
+            admin_query = st.text_input("اكتبي سؤالكِ الإداري أو اطلبي مقترحات التطوير هنا:")
+            
+            if admin_query:
+                with st.spinner("📊 جاري رصد الأرقام وصياغة التوصيات الذكية..."):
+                    try:
+                        model = genai.GenerativeModel("gemini-1.5-flash")
+                        full_prompt = f"{data_context}\n\nسؤال المدير: {admin_query}\nالتقرير والمقترحات الإدارية:"
+                        response = model.generate_content(full_prompt)
+                        st.info(response.text)
+                    except Exception as e:
+                        st.error(f"حدث خطأ أثناء التحليل: {e}")
         else:
-            st.error("لا يمكن عرض التقارير لعدم وجود ملف الداتا سيت بالشكل الصحيح.")
+            st.error("ملف البيانات غير موجود أو لم يتم قراءته بشكل صحيح.")
             
     elif password != "":
         st.sidebar.error("❌ كلمة السر خاطئة!")
-        st.warning("الرجاء إدخال كلمة سر المدير الصحيحة في القائمة الجانبية لتفعيل لوحة التحكم.")
-    else:
-        st.info("🔒 الرجاء إدخال كلمة سر المدير في خانة الباسوورد المتاحة الآن على يسار الشاشة (القائمة الجانبية) لرؤية البيانات والمقترحات.")
